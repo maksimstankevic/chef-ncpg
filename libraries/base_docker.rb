@@ -10,15 +10,15 @@ class Chef
       actions(:install)
 
       attribute(
-        :user, kind_of: String, default: lazy { raise 'Not implemented.' }
+        :user, kind_of: String, default: lazy { raise 'not implemented' }
       )
 
       attribute(
-        :group, kind_of: String, default: lazy { raise 'Not implemented.' }
+        :group, kind_of: String, default: lazy { raise 'not implemented' }
       )
 
       attribute(
-        :user_shell, kind_of: String, default: lazy { raise 'Not implemented.' }
+        :user_shell, kind_of: String, default: lazy { node['chef-ncpg']['user_shell'] }
       )
 
       attribute(
@@ -30,16 +30,15 @@ class Chef
       )
 
       attribute(
-        :docker_group, kind_of: String, default: lazy { node['chef-ncpg']['docker']['group'] }
-      )
-
-
-      attribute(
-        :docker_subnet, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['subnet'] }
+        :docker_net_name, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['name'] }
       )
 
       attribute(
-        :docker_gateway, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['gateway'] }
+        :docker_net_subnet, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['subnet'] }
+      )
+
+      attribute(
+        :docker_net_gateway, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['gateway'] }
       )
     end
   end
@@ -75,6 +74,7 @@ class Chef
         return if %w[centos].include?(platform)
         raise "Platform #{platform} is not supported"
       end
+
       private
 
       def create_user
@@ -91,11 +91,6 @@ class Chef
       end
 
       def install_docker
-        group 'addDockerGroup' do
-          group_name 'docker'
-          members new_resource.user
-        end
-
         ver = new_resource.docker_version
 
         docker_service 'default' do
@@ -106,9 +101,9 @@ class Chef
       end
 
       def configure_docker_network
-        docker_network 'pg' do
-          subnet new_resource.docker_subnet
-          gateway new_resource.docker_gateway
+        docker_network "#{new_resource.docker_net_name}" do
+          subnet new_resource.docker_net_subnet
+          gateway new_resource.docker_net_gateway
         end
       end
 

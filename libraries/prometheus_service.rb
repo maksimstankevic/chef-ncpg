@@ -1,14 +1,14 @@
 class Chef
   class Resource
-    class GrafanaService < BaseService
-      provides(:grafana_service)
+    class PrometheusService < BaseService
+      provides(:prometheus_service)
 
     end
   end
 
   class Provider
-    class GrafanaService < BaseService
-      provides(:grafana_service)
+    class PrometheusService < BaseService
+      provides(:prometheus_service)
 
       def action_install
         converge_by("chef-ncpg installing #{new_resource.name}") do
@@ -21,7 +21,7 @@ class Chef
       protected
 
       def deriver_install
-        raise  'No service implementation for Grafana. Please use docker option.'
+        raise  'No service implementation for Prometheus. Please use docker option.'
       end
 
     end

@@ -10,58 +10,30 @@ class Chef
       actions(:install)
 
       attribute(
-        :user,
-        kind_of: String,
-        default: lazy { node['chef-ncpg']['user'] }
+        :user, kind_of: String, default: lazy { raise 'not implemented' }
       )
       attribute(
-        :group,
-        kind_of: String,
-        default: lazy { node['chef-ncpg']['group'] }
+        :group, kind_of: String, default: lazy { raise 'not implemented' }
       )
       attribute(
-        :bin_path,
-        kind_of: String,
-        default: '/usr/local/bin'
+        :bin_path, kind_of: String, default: lazy { node['chef-ncpg']['bin_path'] }'
       )
       attribute(
-        :bin_name,
-        kind_of: String,
-        default: lazy { raise 'Not implemented' }
+        :bin_name, kind_of: String, default: lazy { raise 'Not implemented' }
       )
       attribute(
-        :ncpg_user_shell,
-        kind_of: String,
-        default: '/bin/false'
+        :user_shell, kind_of: String, default: lazy { node['chef-ncpg']['user_shell'] }
       )
 
       attribute(
-        :service_name,
-        kind_of: String,
-        default: lazy { bin_name }
+        :service_name, kind_of: String, default: lazy { bin_name }
       )
 
       attribute(
-        :service_unit_after,
-        kind_of: Array,
-        default: %w[syslog.target network.target]
+        :service_unit_after, kind_of: Array, default: %w[network-online.target]
       )
       attribute(
-        :service_restart,
-        kind_of: String,
-        default: 'on-failure'
-      )
-
-      attribute(
-        :ncpgroot,
-        kind_of: String,
-        default: '/var/lib/ncpg'
-      )
-
-      attribute(
-        :ncpgdataroot,
-        kind_of: String,
-        default: '/var/lib/ncpgdataroot'
+        :service_restart, kind_of: String, default: 'on-failure'
       )
 
     end
@@ -71,57 +43,18 @@ class Chef
     class BaseService < Chef::Provider
       include Poise
 
-      def additional_args
-        args = {}
-        args['log_dir'] = service_log_dir if new_resource.args['log_dir'].nil?
-        args
-      end
-
       def action_install
         converge_by("chef-ncpg installing #{new_resource.name}") do
           notifying_block do
             validate!
             create_user
-            create_directories [
-              new_resource.ncpgroot,
-              new_resource.ncpgdataroot,
-              ncpg_bin_path,
-              ncpg_config_path,
-              base_log_dir,
-              service_log_dir
-            ]
+            install_binary
             deriver_install
           end
         end
       end
 
       protected
-
-      def service_log_dir
-        @service_log_dir ||= ::File.join(base_log_dir, new_resource.service_name)
-      end
-
-      def base_log_dir
-        @base_log_dir ||= '/var/log/ncpg'
-      end
-
-      def ncpg_bin_path
-        @ncpg_bin_path ||= ::File.join(new_resource.ncpgroot, 'bin')
-      end
-
-      def ncpg_config_path
-        @ncpg_config_path ||= ::File.join(new_resource.ncpgroot, 'config')
-      end
-
-      def create_directories(dirs)
-        Array(dirs).each do |dir|
-          directory dir do
-            owner new_resource.user
-            group new_resource.group
-            mode '0750'
-          end
-        end
-      end
 
       def deriver_install
         raise 'Not implemented'
@@ -144,6 +77,72 @@ class Chef
         )
       end
 
+      def release_hash
+        @vitess_release_hash ||= {}
+        @vitess_release_hash[new_resource.bin_name] ||= new_resource.version.split('-')[1]
+      end
+
+      def release_url
+        node['vitess']['releases'][vitess_release_hash]['url']
+      end
+
+      def release_checksum
+        node['vitess']['releases'][vitess_release_hash]['checksum']
+      end
+
+      def release_cache_path
+        cache_path = Chef::Config[:file_cache_path]
+        release_url = vitess_release_url
+        archive_file_name = ::File.basename(release_url)
+        archive_cache_path = ::File.join(cache_path, archive_file_name)
+        archive_cache_path.gsub(/\.tar\.gz$/, '')
+      end
+
+      def cache_binary
+        cache_path = Chef::Config[:file_cache_path]
+        release_url = release_url
+        release_checksum = release_checksum
+        archive_file_name = ::File.basename(release_url)
+        archive_cache_path = ::File.join(cache_path, archive_file_name)
+
+        bash "extract vitess bin file #{archive_cache_path}" do
+          cwd cache_path
+          user 'root'
+          code "tar -zxf #{archive_cache_path}"
+          action :nothing
+        end
+
+        remote_file archive_cache_path do
+          source release_url
+          owner 'root'
+          group 'root'
+          mode '0640'
+          checksum release_checksum
+          notifies :run, "bash[extract vitess bin file #{archive_cache_path}]", :immediate
+        end
+      end
+
+      def install_binary
+        bin_name_with_release = "#{new_resource.bin_name}-#{vitess_release_hash}"
+        bin_path_with_release = ::File.join(new_resource.bin_path, bin_name_with_release)
+        bin_source_path = ::File.join(vitess_release_cache_path, 'bin', new_resource.bin_name)
+
+        cache_binary
+
+        bash "copy #{bin_source_path} to #{bin_path_with_release}" do
+          user 'root'
+          code <<-CODE
+            cp #{bin_source_path} #{bin_path_with_release} &&
+            chown root:root #{bin_path_with_release} &&
+            chmod 0755 #{bin_path_with_release}
+          CODE
+          creates bin_path_with_release
+        end
+
+        link ::File.join(new_resource.bin_path, new_resource.bin_name) do
+          to bin_path_with_release
+        end
+      end
 
       def start_service
         service new_resource.service_name do
@@ -153,21 +152,6 @@ class Chef
           )
           action %i[enable start]
         end
-      end
-
-      def service_args(args = new_resource.args)
-        args
-          .merge(additional_args)
-          .reject { |_k, v| v.nil? }
-          .map { |k, v| "-#{k}=#{v}" }
-          .join(" \\\n ")
-      end
-
-      def ncpg_environment
-        {
-          'NCPGROOT' => new_resource.ncpgroot,
-          'NCPGDATAROOT' => new_resource.ncpgdataroot,
-        }
       end
 
       def install_service

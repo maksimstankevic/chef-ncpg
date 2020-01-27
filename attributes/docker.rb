@@ -1,5 +1,9 @@
 default['chef-ncpg']['docker']['version'] = '19.03.5'
 default['chef-ncpg']['docker']['version_lock'] = true
-default['chef-ncpg']['docker']['group'] = 'docker'
+default['chef-ncpg']['docker']['net']['name'] = 'ncpg'
 default['chef-ncpg']['docker']['net']['subnet'] = '192.168.13.0/29'
 default['chef-ncpg']['docker']['net']['gateway'] = '192.168.13.1'
+default['chef-ncpg']['docker']['grafana']['docker_host_port'] = '3000'
+default['chef-ncpg']['docker']['grafana']['container_ip'] = '192.168.13.3'
+default['chef-ncpg']['docker']['prometheus']['docker_host_port'] = '9090'
+default['chef-ncpg']['docker']['prometheus']['container_ip'] = '192.168.13.2'

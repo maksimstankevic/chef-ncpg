@@ -1,3 +1,2 @@
-default['chef-ncpg']['user'] = 'ncpg'
-default['chef-ncpg']['group'] = 'ncpg'
 default['chef-ncpg']['user_shell'] = '/bin/false'
+default['chef-ncpg']['bin_path'] = '/usr/local/bin'
