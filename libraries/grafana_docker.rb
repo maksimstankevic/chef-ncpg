@@ -37,7 +37,7 @@ class Chef
       )
 
       attribute(
-        :ini_options, kind_of: Array, default: lazy { node['chef-ncpg']['grafana']['ini_options'] }
+        :grafana_env, kind_of: Array, default: lazy { node['chef-ncpg']['grafana']['env'] }
       )
 
     end
@@ -75,9 +75,17 @@ class Chef
         password = new_resource.password
         container_ip = new_resource.container_ip
 
-        ini_options = new_resource.ini_options.dup
-        ini_options.push('GF_SECURITY_ADMIN_PASSWORD=' + password)
-        ini_options.push('GF_SERVER_HTTP_PORT=' + port)
+        env = new_resource.grafana_env.dup
+
+        env = env.map do |o|
+          if o.include? "GF_SECURITY_ADMIN_PASSWORD"
+            'GF_SECURITY_ADMIN_PASSWORD=' + password
+          elsif o.include? "GF_SERVER_HTTP_PORT"
+            'GF_SERVER_HTTP_PORT=' + port
+          else
+            o
+          end
+        end
 
         docker_image "grafanaImage" do
           repo 'grafana/grafana'
@@ -89,7 +97,7 @@ class Chef
           repo 'grafana/grafana'
           tag ver if new_resource.version_lock
           port docker_port + ':' + port
-          env ini_options
+          env env
           restart_policy 'always'
           action :run
           network_mode "#{new_resource.docker_net_name}"

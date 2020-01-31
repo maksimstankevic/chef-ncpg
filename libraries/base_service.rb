@@ -16,7 +16,7 @@ class Chef
         :group, kind_of: String, default: lazy { raise 'not implemented' }
       )
       attribute(
-        :bin_path, kind_of: String, default: lazy { node['chef-ncpg']['bin_path'] }'
+        :bin_path, kind_of: String, default: lazy { node['chef-ncpg']['bin_path'] }
       )
       attribute(
         :bin_name, kind_of: String, default: lazy { raise 'Not implemented' }
@@ -24,11 +24,9 @@ class Chef
       attribute(
         :user_shell, kind_of: String, default: lazy { node['chef-ncpg']['user_shell'] }
       )
-
       attribute(
         :service_name, kind_of: String, default: lazy { bin_name }
       )
-
       attribute(
         :service_unit_after, kind_of: Array, default: %w[network-online.target]
       )
@@ -48,7 +46,7 @@ class Chef
           notifying_block do
             validate!
             create_user
-            install_binary
+            #install_binary
             deriver_install
           end
         end
@@ -57,6 +55,14 @@ class Chef
       protected
 
       def deriver_install
+        raise 'Not implemented'
+      end
+
+      def release_url
+        raise 'Not implemented'
+      end
+
+      def release_checksum
         raise 'Not implemented'
       end
 
@@ -77,70 +83,59 @@ class Chef
         )
       end
 
-      def release_hash
-        @vitess_release_hash ||= {}
-        @vitess_release_hash[new_resource.bin_name] ||= new_resource.version.split('-')[1]
-      end
-
-      def release_url
-        node['vitess']['releases'][vitess_release_hash]['url']
-      end
-
-      def release_checksum
-        node['vitess']['releases'][vitess_release_hash]['checksum']
-      end
-
       def release_cache_path
-        cache_path = Chef::Config[:file_cache_path]
-        release_url = vitess_release_url
-        archive_file_name = ::File.basename(release_url)
-        archive_cache_path = ::File.join(cache_path, archive_file_name)
-        archive_cache_path.gsub(/\.tar\.gz$/, '')
+        @url = release_url
+        #raise @url
+        @checksum = release_checksum
+        @archive_cache_path = ::File.join(@cache_path, @archive_file_name)
+        "#{@archive_cache_path}".gsub(/\.tar\.gz$/, '')
       end
 
       def cache_binary
-        cache_path = Chef::Config[:file_cache_path]
-        release_url = release_url
-        release_checksum = release_checksum
-        archive_file_name = ::File.basename(release_url)
-        archive_cache_path = ::File.join(cache_path, archive_file_name)
+        # raise @url
 
-        bash "extract vitess bin file #{archive_cache_path}" do
+        url = @url
+        checksum = @checksum
+        archive_cache_path = @archive_cache_path
+        cache_path = @cache_path
+
+        bash "extract bin file #{archive_cache_path}" do
           cwd cache_path
           user 'root'
           code "tar -zxf #{archive_cache_path}"
           action :nothing
         end
 
-        remote_file archive_cache_path do
-          source release_url
+        # raise @url
+
+        remote_file "#{archive_cache_path}" do
+          source url
           owner 'root'
           group 'root'
           mode '0640'
-          checksum release_checksum
-          notifies :run, "bash[extract vitess bin file #{archive_cache_path}]", :immediate
+          checksum checksum
+          notifies :run, "bash[extract bin file #{archive_cache_path}]", :immediate
         end
       end
 
       def install_binary
-        bin_name_with_release = "#{new_resource.bin_name}-#{vitess_release_hash}"
-        bin_path_with_release = ::File.join(new_resource.bin_path, bin_name_with_release)
-        bin_source_path = ::File.join(vitess_release_cache_path, 'bin', new_resource.bin_name)
+        bin_name_with_version = "#{new_resource.bin_name}-#{new_resource.version}"
+        bin_path_with_version = ::File.join(new_resource.bin_path, bin_name_with_version)
+        bin_source_path = ::File.join(release_cache_path, new_resource.bin_name)
+        # raise "#{bin_source_path} - #{@url}"
 
         cache_binary
 
-        bash "copy #{bin_source_path} to #{bin_path_with_release}" do
-          user 'root'
-          code <<-CODE
-            cp #{bin_source_path} #{bin_path_with_release} &&
-            chown root:root #{bin_path_with_release} &&
-            chmod 0755 #{bin_path_with_release}
-          CODE
-          creates bin_path_with_release
+        # raise bin_source_path
+
+        file bin_path_with_version do
+          content IO.read(bin_source_path)
+          mode '0755'
+          action :create
         end
 
         link ::File.join(new_resource.bin_path, new_resource.bin_name) do
-          to bin_path_with_release
+          to bin_path_with_version
         end
       end
 
@@ -150,15 +145,20 @@ class Chef
             status: true,
             restart: true
           )
-          action %i[enable start]
+          action %i[enable restart]
         end
+      end
+
+      def service_args
+        args = new_resource.service_args.dup
+        args.join(" \\\n ")
       end
 
       def install_service
         cmd = "#{bin_location} \\\n #{service_args}"
         service_name = new_resource.service_name
-        exec_start = ::File.join(ncpg_bin_path, "#{service_name}.sh")
-        env = ncpg_environment
+        bin_path = new_resource.bin_path
+        exec_start = ::File.join(bin_path, "#{service_name}.sh")
 
         template exec_start do
           source 'wrap.sh.erb'
@@ -185,7 +185,6 @@ class Chef
             restart new_resource.service_restart
             user new_resource.user
             group new_resource.group
-            environment env
           end
         end
       end
@@ -201,7 +200,7 @@ class Chef
 
         user new_resource.user do
           group new_resource.group
-          shell new_resource.ncpg_user_shell
+          shell new_resource.user_shell
           action :create
           notifies :create, "group[#{new_resource.group}]", :before
         end

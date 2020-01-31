@@ -4,24 +4,36 @@ class Chef
       provides(:node_exporter_service)
 
       attribute(
+        :user, kind_of: String, default: lazy { node['chef-ncpg']['node_exporter']['user'] }
+      )
+
+      attribute(
+        :group, kind_of: String, default: lazy { node['chef-ncpg']['node_exporter']['group'] }
+      )
+
+      attribute(
         :version, kind_of: String, default: lazy { node['chef-ncpg']['node_exporter']['version'] }
       )
 
       attribute(
-        :bin_name, kind_of: String, default: 'mysqlctld'
+        :release_url_template, kind_of: String, default: lazy { node['chef-ncpg']['node_exporter']['release_url'] }
       )
 
       attribute(
-        :args, kind_of: Hash, default: lazy { node['vitess']['mysqlctld'] }
+        :bin_name, kind_of: String, default: lazy { node['chef-ncpg']['node_exporter']['bin_name'] }
       )
+
+      attribute(
+        :service_args, kind_of: Array, default: lazy { node['chef-ncpg']['node_exporter']['args'] }
+      )
+
 
     end
   end
 
   class Provider
-    # Mysqlctld service installation and configuration
-    class MysqlctldService < VitessBaseService
-      provides(:mysqlctld_service)
+    class NodeExporterService < BaseService
+      provides(:node_exporter_service)
 
       def action_delete
         service new_resource.service_name do
@@ -29,25 +41,37 @@ class Chef
         end
       end
 
-      def additional_args
-        args = {}
-        args['init_db_sql_file'] = init_dbsql_path if args['init_db_sql_file'].nil?
-        args
-      end
-
       protected
 
-      # rubocop:disable Metrics/MethodLength
-      # rubocop:disable Metrics/AbcSize
+      def release_url
+        @templated_url = new_resource.release_url_template
+        @ver = new_resource.version
+        @archive_file_name = ::File.basename("#{@templated_url}".gsub('XX.XX.XX', @ver))
+        "#{@templated_url}".gsub('XX.XX.XX', @ver)
+      end
+
+      def release_checksum
+        checksum_file_url = "#{@templated_url}".gsub(/vXX.XX.XX.*/, "v#{@ver}/sha256sums.txt")
+
+        @cache_path = Chef::Config[:file_cache_path]
+        checksums_file_path = ::File.join(@cache_path, "sha256sums.txt")
+
+        remote_file checksums_file_path do
+          source checksum_file_url
+        end
+
+        ::File.readlines(checksums_file_path).grep(/#{@archive_file_name}/)[0].chomp.gsub(/^(\w+).*$/, '\1')
+      end
+
       def deriver_install
-        install_mycnf_config
-        install_init_dbsql
-        install_vitess_binary
+        #for debugging - release_url - raise "#{release_checksum}"
+        install_binary
         install_service
         start_service
       end
-      # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/AbcSize
+
+      private
+
     end
   end
 end
