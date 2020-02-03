@@ -58,9 +58,11 @@ class Chef
 
         remote_file checksums_file_path do
           source checksum_file_url
-        end
+        end.run_action(:create)
 
-        ::File.readlines(checksums_file_path).grep(/#{@archive_file_name}/)[0].chomp.gsub(/^(\w+).*$/, '\1')
+        if ::File.exist?(checksums_file_path)
+          ::File.readlines(checksums_file_path).grep(/#{@archive_file_name}/)[0].chomp.gsub(/^(\w+).*$/, '\1')
+        end
       end
 
       def deriver_install

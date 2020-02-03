@@ -42,7 +42,7 @@ class Chef
       include Poise
 
       def action_install
-        converge_by("chef-ncpg installing #{new_resource.name}") do
+        converge_by("chef-ncpg installing service for #{new_resource.bin_name}") do
           notifying_block do
             validate!
             create_user
@@ -129,9 +129,10 @@ class Chef
         # raise bin_source_path
 
         file bin_path_with_version do
-          content IO.read(bin_source_path)
+          content lazy { IO.read(bin_source_path) }
           mode '0755'
           action :create
+          notifies :restart, "service[#{new_resource.service_name}]", :delayed
         end
 
         link ::File.join(new_resource.bin_path, new_resource.bin_name) do
@@ -145,7 +146,7 @@ class Chef
             status: true,
             restart: true
           )
-          action %i[enable restart]
+          action %i[enable start]
         end
       end
 
@@ -167,6 +168,7 @@ class Chef
           group new_resource.group
           mode '0750'
           cookbook 'chef-ncpg'
+          notifies :restart, "service[#{new_resource.service_name}]", :delayed
         end
 
         systemd_service service_name do
