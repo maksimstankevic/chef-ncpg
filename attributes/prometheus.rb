@@ -4,6 +4,8 @@ default['chef-ncpg']['prometheus']['port'] = '9090'
 default['chef-ncpg']['prometheus']['implement_via_docker'] = true
 default['chef-ncpg']['prometheus']['version'] = 'v2.9.2'
 default['chef-ncpg']['prometheus']['version_lock'] = true
-default['chef-ncpg']['prometheus']['url'] = 'https://github.com/prometheus/prometheus/releases/download/v2.9.2/prometheus-2.9.2.linux-arm64.tar.gz'
-default['chef-ncpg']['prometheus']['checksum'] = '19d29910fd0e51765d47b59b9276df016441ad4c6c48e3b27e5aa9acb5d1da26'
-default['chef-ncpg']['prometheus']['ini_options'] = []
+default['chef-ncpg']['prometheus']['args'] = [
+  '--web.listen-address="0.0.0.0:9090"',
+  '--config.file="/etc/prometheus/prometheus.yml"',
+  '--storage.tsdb.retention.time="5d"'
+]

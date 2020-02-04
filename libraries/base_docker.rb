@@ -40,6 +40,10 @@ class Chef
       attribute(
         :docker_net_gateway, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['gateway'] }
       )
+
+      attribute(
+        :docker_bridge_ip, kind_of: String, default: lazy { node['chef-ncpg']['docker']['bridge_ip'] }
+      )
     end
   end
 
@@ -88,6 +92,11 @@ class Chef
           action :create
           notifies :create, "group[#{new_resource.group}]", :before
         end
+
+        group 'docker' do
+          append true
+          members new_resource.user
+        end
       end
 
       def install_docker
@@ -96,6 +105,7 @@ class Chef
         docker_service 'default' do
           install_method 'package'
           version ver if new_resource.docker_version_lock
+          bip new_resource.docker_bridge_ip
           action [:create, :start]
         end
       end
