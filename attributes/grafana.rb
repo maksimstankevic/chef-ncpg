@@ -15,3 +15,9 @@ default['chef-ncpg']['grafana']['env'] = [
   'GF_SERVER_HTTP_PORT=2000',
   'GF_SECURITY_ADMIN_USER=root'
 ]
+default['chef-ncpg']['grafana']['auto_add_prometheus_datasource'] = true
+
+#below option will only trigger action when "auto_add_prometheus_datasource" is "true" as well
+default['chef-ncpg']['grafana']['auto_add_dashboards'] = true
+
+default['chef-ncpg']['grafana']['dashboards_folder_name_in_cookbook_files'] = 'dashboards'

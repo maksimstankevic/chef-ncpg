@@ -40,6 +40,18 @@ class Chef
         :grafana_env, kind_of: Array, default: lazy { node['chef-ncpg']['grafana']['env'] }
       )
 
+      attribute(
+        :add_prometheus_datasource, kind_of: [TrueClass, FalseClass], default: lazy { node['chef-ncpg']['grafana']['auto_add_prometheus_datasource'] }
+      )
+
+      attribute(
+        :add_dashboards, kind_of: [TrueClass, FalseClass], default: lazy { node['chef-ncpg']['grafana']['auto_add_dashboards'] }
+      )
+
+      attribute(
+        :dashboards_dir_name, kind_of: String, default: lazy { node['chef-ncpg']['grafana']['dashboards_folder_name_in_cookbook_files'] }
+      )
+
     end
   end
 
@@ -51,6 +63,8 @@ class Chef
 
       def deriver_install
         grafana_container
+        add_prometheus_datasource if new_resource.add_prometheus_datasource
+        add_dashboards if new_resource.add_prometheus_datasource && new_resource.add_dashboards
       end
 
       protected
@@ -108,6 +122,57 @@ class Chef
           ipc_mode 'shareable'
           working_dir '/usr/share/grafana'
           user 'grafana'
+        end
+      end
+
+      def add_prometheus_datasource
+        grafana_ip = new_resource.container_ip
+        grafana_port = new_resource.docker_port
+        grafana_env_arr = new_resource.grafana_env.dup
+        #node_exporter_port = node_exporter_port_arr.grep(/^--web.listen-address=/)[0].match(/[0-9]+/)[0]
+        grafana_admin_user = grafana_env_arr.grep(/^GF_SECURITY_ADMIN_USER=/)[0].match(/[^=]+$/)[0]
+        grafana_admin_pass = new_resource.password
+        grafana_auth = "#{grafana_admin_user}:#{grafana_admin_pass}"
+        # raise grafana_admin_user
+        prometheus_ip = node['chef-ncpg']['docker']['prometheus']['container_ip']
+        prometheus_port = node['chef-ncpg']['docker']['prometheus']['docker_host_port']
+
+        http_request 'add prometheus datasource' do
+          action :post
+          url "http://#{grafana_ip}:#{grafana_port}/api/datasources"
+          message ({:name => 'prometheus',
+                    :type => 'prometheus',
+                    :url => "http://#{prometheus_ip}:#{prometheus_port}",
+                    :access => 'proxy'}.to_json)
+          headers ({'AUTHORIZATION' => "Basic #{Base64.encode64(grafana_auth)}", 'Content-Type' => 'application/json'})
+        end
+      end
+
+      def add_dashboards
+        remote_directory '/opt/grafana/dashboards' do
+          source new_resource.dashboards_dir_name
+          owner new_resource.user
+          group new_resource.group
+        end.run_action(:create)
+
+        dashboards = Dir.entries("/opt/grafana/dashboards").select {|f| !::File.directory? f}
+
+        grafana_ip = new_resource.container_ip
+        grafana_port = new_resource.docker_port
+        grafana_env_arr = new_resource.grafana_env.dup
+        grafana_admin_user = grafana_env_arr.grep(/^GF_SECURITY_ADMIN_USER=/)[0].match(/[^=]+$/)[0]
+        grafana_admin_pass = new_resource.password
+        grafana_auth = "#{grafana_admin_user}:#{grafana_admin_pass}"
+        prometheus_ip = node['chef-ncpg']['docker']['prometheus']['container_ip']
+        prometheus_port = node['chef-ncpg']['docker']['prometheus']['docker_host_port']
+
+        dashboards.each do |f|
+          http_request 'add grafana dashboards' do
+            action :post
+            url "http://#{grafana_ip}:#{grafana_port}/api/dashboards/db"
+            message lazy { IO.read("/opt/grafana/dashboards/#{f}") }
+            headers ({'AUTHORIZATION' => "Basic #{Base64.encode64(grafana_auth)}", 'Content-Type' => 'application/json'})
+          end
         end
       end
     end
