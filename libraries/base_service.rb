@@ -206,7 +206,7 @@ class Chef
           action :create
           notifies :create, "group[#{new_resource.group}]", :before
         end
-        
+
         group 'docker' do
           append true
           members new_resource.user

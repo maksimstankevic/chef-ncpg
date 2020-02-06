@@ -149,13 +149,11 @@ class Chef
       end
 
       def add_dashboards
-        remote_directory '/opt/grafana/dashboards' do
+        remote_directory '/tmp/dashboards' do
           source new_resource.dashboards_dir_name
-          owner new_resource.user
-          group new_resource.group
         end.run_action(:create)
 
-        dashboards = Dir.entries("/opt/grafana/dashboards").select {|f| !::File.directory? f}
+        dashboards = Dir.entries("/tmp/dashboards").select {|f| !::File.directory? f}
 
         grafana_ip = new_resource.container_ip
         grafana_port = new_resource.docker_port
@@ -170,7 +168,7 @@ class Chef
           http_request 'add grafana dashboards' do
             action :post
             url "http://#{grafana_ip}:#{grafana_port}/api/dashboards/db"
-            message lazy { IO.read("/opt/grafana/dashboards/#{f}") }
+            message lazy { IO.read("/tmp/dashboards/#{f}") }
             headers ({'AUTHORIZATION' => "Basic #{Base64.encode64(grafana_auth)}", 'Content-Type' => 'application/json'})
           end
         end
