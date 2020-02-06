@@ -1,12 +1,13 @@
 class Chef
   class Resource
+    # cadvisor resource for installation/configuration via docker
     class CadvisorDocker < BaseDocker
       provides(:cadvisor_docker)
-
     end
   end
 
   class Provider
+    # cadvisor resource for installation/configuration via docker
     class CadvisorDocker < BaseDocker
       provides(:cadvisor_docker)
 
@@ -21,9 +22,9 @@ class Chef
       protected
 
       def deriver_install
-        raise  'No docker implementation for Cadvisor. Please use service option.'
+        raise 'No docker implementation for Cadvisor.'\
+        ' Please use service option.'
       end
-
     end
   end
 end

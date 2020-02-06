@@ -1,12 +1,13 @@
 class Chef
   class Resource
+    # node_exporter resource for installation/configuration via docker
     class NodeExporterDocker < BaseDocker
       provides(:node_exporter_docker)
-
     end
   end
 
   class Provider
+    # node_exporter resource for installation/configuration via docker
     class NodeExporterDocker < BaseDocker
       provides(:node_exporter_docker)
 
@@ -21,9 +22,9 @@ class Chef
       protected
 
       def deriver_install
-        raise  'No docker implementation for NodeExporter. Please use service option.'
+        raise 'No docker implementation for NodeExporter.'\
+        ' Please use service option.'
       end
-
     end
   end
 end

@@ -1,10 +1,10 @@
 default['chef-ncpg']['grafana']['user'] = 'grafana'
 default['chef-ncpg']['grafana']['group'] = 'grafana'
 
-#this will override GF_SERVER_HTTP_PORT in env
+# this will override GF_SERVER_HTTP_PORT in env
 default['chef-ncpg']['grafana']['port'] = '3000'
 
-#this will override GF_SECURITY_ADMIN_PASSWORD in env
+# this will override GF_SECURITY_ADMIN_PASSWORD in env
 default['chef-ncpg']['grafana']['pass'] = ''
 
 default['chef-ncpg']['grafana']['implement_via_docker'] = true
@@ -17,7 +17,9 @@ default['chef-ncpg']['grafana']['env'] = [
 ]
 default['chef-ncpg']['grafana']['auto_add_prometheus_datasource'] = true
 
-#below option will only trigger action when "auto_add_prometheus_datasource" is "true" as well
+# below option will only trigger action
+# when "auto_add_prometheus_datasource" is "true" as well
 default['chef-ncpg']['grafana']['auto_add_dashboards'] = true
 
-default['chef-ncpg']['grafana']['dashboards_folder_name_in_cookbook_files'] = 'dashboards'
+default['chef-ncpg']['grafana']\
+['dashboards_folder_name_in_cookbook_files'] = 'dashboards'

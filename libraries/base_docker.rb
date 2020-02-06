@@ -4,50 +4,70 @@ require 'chef/provider'
 
 class Chef
   class Resource
+    # base ncpg cookbook resource for docker implementattions
     class BaseDocker < Chef::Resource
       include Poise
 
       actions(:install)
 
       attribute(
-        :user, kind_of: String, default: lazy { raise 'not implemented' }
+        :user,
+        kind_of: String,
+        default: lazy { raise 'not implemented' }
       )
 
       attribute(
-        :group, kind_of: String, default: lazy { raise 'not implemented' }
+        :group,
+        kind_of: String,
+        default: lazy { raise 'not implemented' }
       )
 
       attribute(
-        :user_shell, kind_of: String, default: lazy { node['chef-ncpg']['user_shell'] }
+        :user_shell,
+        kind_of: String,
+        default: lazy { node['chef-ncpg']['user_shell'] }
       )
 
       attribute(
-        :docker_version, kind_of: String, default: lazy { node['chef-ncpg']['docker']['version'] }
+        :docker_version,
+        kind_of: String,
+        default: lazy { node['chef-ncpg']['docker']['version'] }
       )
 
       attribute(
-        :docker_version_lock, kind_of: [TrueClass, FalseClass], default: lazy { node['chef-ncpg']['docker']['version_lock'] }
+        :docker_version_lock,
+        kind_of: [TrueClass, FalseClass],
+        default: lazy { node['chef-ncpg']['docker']['version_lock'] }
       )
 
       attribute(
-        :docker_net_name, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['name'] }
+        :docker_net_name,
+        kind_of: String,
+        default: lazy { node['chef-ncpg']['docker']['net']['name'] }
       )
 
       attribute(
-        :docker_net_subnet, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['subnet'] }
+        :docker_net_subnet,
+        kind_of: String,
+        default: lazy { node['chef-ncpg']['docker']['net']['subnet'] }
       )
 
       attribute(
-        :docker_net_gateway, kind_of: String, default: lazy { node['chef-ncpg']['docker']['net']['gateway'] }
+        :docker_net_gateway,
+        kind_of: String,
+        default: lazy { node['chef-ncpg']['docker']['net']['gateway'] }
       )
 
       attribute(
-        :docker_bridge_ip, kind_of: String, default: lazy { node['chef-ncpg']['docker']['bridge_ip'] }
+        :docker_bridge_ip,
+        kind_of: String,
+        default: lazy { node['chef-ncpg']['docker']['bridge_ip'] }
       )
     end
   end
 
   class Provider
+    # base ncpg cookbook resource for docker implementattions
     class BaseDocker < Chef::Provider
       include Poise
 
@@ -81,6 +101,7 @@ class Chef
 
       private
 
+      # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
       def create_user
         group new_resource.group do
           action :nothing
@@ -98,6 +119,7 @@ class Chef
           members new_resource.user
         end
       end
+      # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
       def install_docker
         ver = new_resource.docker_version
@@ -106,17 +128,16 @@ class Chef
           install_method 'package'
           version ver if new_resource.docker_version_lock
           bip new_resource.docker_bridge_ip
-          action [:create, :start]
+          action %i[create start]
         end
       end
 
       def configure_docker_network
-        docker_network "#{new_resource.docker_net_name}" do
+        docker_network new_resource.docker_net_name do
           subnet new_resource.docker_net_subnet
           gateway new_resource.docker_net_gateway
         end
       end
-
     end
   end
 end

@@ -1,12 +1,13 @@
 class Chef
   class Resource
+    # resourceforinstalling/configuring prometheus via systemd
     class PrometheusService < BaseService
       provides(:prometheus_service)
-
     end
   end
 
   class Provider
+    # resourceforinstalling/configuring prometheus via systemd
     class PrometheusService < BaseService
       provides(:prometheus_service)
 
@@ -21,9 +22,9 @@ class Chef
       protected
 
       def deriver_install
-        raise  'No service implementation for Prometheus. Please use docker option.'
+        raise 'No service implementation for Prometheus.'\
+        ' Please use docker option.'
       end
-
     end
   end
 end
