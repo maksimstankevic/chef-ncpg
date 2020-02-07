@@ -57,16 +57,16 @@ describe docker_container('grafana') do
 end
 
 # verify that datasources contain a prometheus one
-describe http('http://192.168.13.3:3000/api/datasources',
-              auth: { user: 'admin', pass: 'pass' },
+describe http('http://127.0.0.1:3000/api/datasources',
+              auth: { user: 'root', pass: 'pass' },
               method: 'GET') do
   its('status') { should cmp 200 }
   its('headers.Content-Type') { should cmp 'application/json' }
 end
 
 # verify that dashboard that we installed exist
-describe http('http://192.168.13.3:3000/api/search',
-              auth: { user: 'admin', pass: 'pass' },
+describe http('http://127.0.0.1:3000/api/search',
+              auth: { user: 'root', pass: 'pass' },
               method: 'GET') do
   its('status') { should cmp 200 }
   its('body') { should match %r{db\/docker-and-system-monitoring} }

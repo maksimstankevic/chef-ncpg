@@ -1,9 +1,5 @@
-# default['chef-ncpg']['cadvisor']['user'] = 'cadvisor'
-# default['chef-ncpg']['cadvisor']['group'] = 'cadvisor'
-# temp workaround, cadvisor has permission problems to
-# read container data when running as cadvisor user
-default['chef-ncpg']['cadvisor']['user'] = 'root'
-default['chef-ncpg']['cadvisor']['group'] = 'root'
+default['chef-ncpg']['cadvisor']['user'] = 'cadvisor'
+default['chef-ncpg']['cadvisor']['group'] = 'cadvisor'
 default['chef-ncpg']['cadvisor']['implement_via_docker'] = false
 default['chef-ncpg']['cadvisor']['version'] = '0.34.0'
 default['chef-ncpg']['cadvisor']['bin_name'] = 'cadvisor'
