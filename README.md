@@ -1,9 +1,17 @@
-chef-ncpg cookbook
+# chef-ncpg cookbook
 
 This cookbook provides custom Chef resources for installing and configuring
 node_exporter, cadvisor, prometheus and grafana. Currently node_exporter and
 cadvisor support systemd implementation and prometheus/grafana support docker
 implementation.
+
+## Requirements
+
+ - Systemd
+
+## Supported OS
+
+ - CentOS 7
 
 Using this cookbook's resources it is possible to build complete monitoring
 system with prometheus scraping metrics from node_exporter and cadvisor, then
@@ -17,6 +25,7 @@ implementatios you can disable version locks if latest versions are preferred.
 Every resource has "args" or "env" attribute that is used for configuring native
 parameters for underlying software, for example:
 
+```ruby
 default['chef-ncpg']['cadvisor']['args'] = [
   '-port 8080',
   '-log_file /tmp/cadvisor.log'
@@ -27,12 +36,14 @@ default['chef-ncpg']['prometheus']['args'] = [
   '--config.file="/etc/prometheus/prometheus.yml"',
   '--storage.tsdb.retention.time="5d"'
 ]
+```
 
 You can add any underlying software supported configuration to those attributes
 to have fine-grain control for all the components.
 
-Example for setting up the whole system:
+## Example for setting up the whole thing:
 
+```ruby
 node_exporter_service 'ncpg'
 
 cadvisor_service 'ncpg'
@@ -53,7 +64,12 @@ end
 service node['chef-ncpg']['cadvisor']['bin_name'] do
   action :nothing
 end
+```
 
 Check full version in default.rb recipe that is controlled by attributes to
 decide which components to implement via docker and which via systemd, this
 recipe as well supports restarting systemd services if configuration changes.
+
+## Resources
+
+Please, check libraries folder for details on implemented resources and their attributes.
