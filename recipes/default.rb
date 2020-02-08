@@ -11,10 +11,10 @@ node_exporter_via_docker = node['chef-ncpg']['node_exporter']\
 cadvisor_via_docker = node['chef-ncpg']['cadvisor']['implement_via_docker']
 
 # rubocop:disable Metrics/LineLength
-grafana_via_docker ? (grafana_docker 'ncpg' do password 'pass' end) : (grafana_service 'ncpg') # rubocop:disable Style/BlockDelimiters
-prometheus_via_docker ? (prometheus_docker 'ncpg') : (prometheus_service 'ncpg')
 node_exporter_via_docker ? (node_exporter_docker 'ncpg') : (node_exporter_service 'ncpg')
 cadvisor_via_docker ? (cadvisor_docker 'ncpg') : (cadvisor_service 'ncpg')
+grafana_via_docker ? (grafana_docker 'ncpg' do password 'pass' end) : (grafana_service 'ncpg') # rubocop:disable Style/BlockDelimiters
+prometheus_via_docker ? (prometheus_docker 'ncpg') : (prometheus_service 'ncpg')
 # rubocop:enable Metrics/LineLength
 
 # restart node_exporter service if

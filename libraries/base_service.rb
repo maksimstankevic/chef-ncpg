@@ -179,7 +179,7 @@ class Chef
         service_name = new_resource.service_name
         bin_path = new_resource.bin_path
         exec_start = ::File.join(bin_path, "#{service_name}.sh")
-        url = new_resource.release_url_template.include
+        url = new_resource.release_url_template
 
         template exec_start do
           source 'wrap.sh.erb'
