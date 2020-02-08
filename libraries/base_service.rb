@@ -179,6 +179,7 @@ class Chef
         service_name = new_resource.service_name
         bin_path = new_resource.bin_path
         exec_start = ::File.join(bin_path, "#{service_name}.sh")
+        url = new_resource.release_url_template.include
 
         template exec_start do
           source 'wrap.sh.erb'
@@ -204,8 +205,13 @@ class Chef
             type 'simple'
             exec_start exec_start
             restart new_resource.service_restart
-            user new_resource.user
-            group new_resource.group
+            # rubocop:disable Style/TernaryParentheses
+            # rubocop:disable Lint/ParenthesesAsGroupedExpression
+            user (url.include? 'cadvisor') ? 'root' : new_resource.user
+            group (url.include? 'cadvisor') ? 'root' : new_resource.group
+            # rubocop:enable Style/TernaryParentheses
+            # rubocop:enable Lint/ParenthesesAsGroupedExpression
+            notifies :restart, "service[#{new_resource.service_name}]", :delayed
           end
         end
       end
