@@ -41,6 +41,103 @@ default['chef-ncpg']['prometheus']['args'] = [
 You can add any underlying software supported configuration to those attributes
 to have fine-grain control for all the components.
 
+## Attributes
+
+default.rb
+```ruby
+default['chef-ncpg']['user_shell'] = '/bin/false'
+default['chef-ncpg']['bin_path'] = '/usr/local/bin'
+```
+docker.rb
+```ruby
+default['chef-ncpg']['docker']['version'] = '19.03.5'
+default['chef-ncpg']['docker']['version_lock'] = true
+default['chef-ncpg']['docker']['net']['name'] = 'ncpg'
+default['chef-ncpg']['docker']['net']['subnet'] = '192.168.13.0/29'
+default['chef-ncpg']['docker']['net']['gateway'] = '192.168.13.1'
+default['chef-ncpg']['docker']['bridge_ip'] = '172.17.0.1/24'
+default['chef-ncpg']['docker']['grafana']['docker_host_port'] = '3000'
+default['chef-ncpg']['docker']['grafana']['container_ip'] = '192.168.13.3'
+default['chef-ncpg']['docker']['prometheus']['docker_host_port'] = '9090'
+default['chef-ncpg']['docker']['prometheus']['container_ip'] = '192.168.13.2'
+```
+cadvisor.rb
+```ruby
+default['chef-ncpg']['cadvisor']['user'] = 'cadvisor'
+default['chef-ncpg']['cadvisor']['group'] = 'cadvisor'
+default['chef-ncpg']['cadvisor']['implement_via_docker'] = false
+default['chef-ncpg']['cadvisor']['version'] = '0.34.0'
+default['chef-ncpg']['cadvisor']['bin_name'] = 'cadvisor'
+default['chef-ncpg']['cadvisor']['release_url'] = 'https://github.com/'\
+'google/cadvisor/releases/download/vXX.XX.XX/cadvisor'
+default['chef-ncpg']['cadvisor']['checksum_url'] = 'https://github.com'\
+'/google/cadvisor/releases/tag/vXX.XX.XX'
+default['chef-ncpg']['cadvisor']['args'] = [
+  '-port 8080',
+  '-log_file /tmp/cadvisor.log'
+]
+```
+grafana.rb
+```ruby
+default['chef-ncpg']['grafana']['user'] = 'grafana'
+default['chef-ncpg']['grafana']['group'] = 'grafana'
+
+# this will override GF_SERVER_HTTP_PORT in env
+default['chef-ncpg']['grafana']['port'] = '3000'
+
+# this will override GF_SECURITY_ADMIN_PASSWORD in env
+default['chef-ncpg']['grafana']['pass'] = ''
+
+default['chef-ncpg']['grafana']['implement_via_docker'] = true
+default['chef-ncpg']['grafana']['version'] = '6.5.3'
+default['chef-ncpg']['grafana']['version_lock'] = true
+default['chef-ncpg']['grafana']['env'] = [
+  'GF_SECURITY_ADMIN_PASSWORD=will_get_iverridden',
+  'GF_SERVER_HTTP_PORT=2000',
+  'GF_SECURITY_ADMIN_USER=root'
+]
+default['chef-ncpg']['grafana']['auto_add_prometheus_datasource'] = true
+
+# below option will only trigger action
+# when "auto_add_prometheus_datasource" is "true" as well
+default['chef-ncpg']['grafana']['auto_add_dashboards'] = true
+
+default['chef-ncpg']['grafana']\
+['dashboards_folder_name_in_cookbook_files'] = 'dashboards'
+```
+node_exporter.rb
+```ruby
+default['chef-ncpg']['node_exporter']['user'] = 'node_exporter'
+default['chef-ncpg']['node_exporter']['group'] = 'node_exporter'
+default['chef-ncpg']['node_exporter']['implement_via_docker'] = false
+default['chef-ncpg']['node_exporter']['version'] = '0.18.1'
+default['chef-ncpg']['node_exporter']['bin_name'] = 'node_exporter'
+default['chef-ncpg']['node_exporter']['release_url'] = 'https://github.com/'\
+'prometheus/node_exporter/releases/'\
+'download/vXX.XX.XX/node_exporter-XX.XX.XX.linux-amd64.tar.gz'
+default['chef-ncpg']['node_exporter']['checksum_url'] = 'https://github.com/'\
+'prometheus/node_exporter/releases/download/vXX.XX.XX/sha256sums.txt'
+default['chef-ncpg']['node_exporter']['args'] = [
+  '--web.listen-address=":9100"',
+  '--collector.filesystem.ignored-mount-points='\
+  '"^/(dev|proc|sys|var/lib/docker/.+)($|/)"'
+]
+```
+prometheus.rb
+```ruby
+default['chef-ncpg']['prometheus']['user'] = 'prometheus'
+default['chef-ncpg']['prometheus']['group'] = 'prometheus'
+default['chef-ncpg']['prometheus']['port'] = '9090'
+default['chef-ncpg']['prometheus']['implement_via_docker'] = true
+default['chef-ncpg']['prometheus']['version'] = 'v2.9.2'
+default['chef-ncpg']['prometheus']['version_lock'] = true
+default['chef-ncpg']['prometheus']['args'] = [
+  '--web.listen-address="0.0.0.0:9090"',
+  '--config.file="/etc/prometheus/prometheus.yml"',
+  '--storage.tsdb.retention.time="5d"'
+]
+```
+
 ## Example for setting up the whole thing:
 
 ```ruby
