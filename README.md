@@ -11,7 +11,9 @@ implementation.
 
 ## Supported OS
 
- - CentOS 7
+ - CentOS 6
+
+ ## Details
 
 Using this cookbook's resources it is possible to build complete monitoring
 system with prometheus scraping metrics from node_exporter and cadvisor, then
